@@ -4,13 +4,12 @@ import os
 import logging
 from datetime import datetime
 
-import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow_datasets.core.features.text import SubwordTextEncoder
 
 from attention import AttentionWeightedAverage
+from utils import encode_text_with_encoder
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
@@ -23,25 +22,6 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
 
 
 def get_text_from_labelled_sample(text, _): return text
-
-
-def encode_text(text):
-  encoded_text = encoder.encode(text)
-  encoded_text = pad_sequences([encoded_text],
-                               maxlen=1000,
-                               padding="post",
-                               truncating="post")
-  encoded_text = np.squeeze(encoded_text)
-
-  return encoded_text
-
-
-def encode(text_tensor, label):
-  return encode_text(text_tensor.numpy()), label
-
-
-def encode_map_fn(text, label):
-  return tf.py_function(encode, inp=[text, label], Tout=(tf.int64, tf.int64))
 
 
 BUFFER_SIZE: int = 15000
@@ -63,6 +43,17 @@ else:
                                                  VOCAB_SIZE)
   encoder.save_to_file(VOCAB_FILE)
   logging.info(f"Vocab file saved at {VOCAB_FILE}.subwords")
+
+
+def encode(text_tensor, label):
+  return encode_text_with_encoder(encoder,
+                                  text_tensor.numpy(),
+                                  MAX_WORDS), label
+
+
+def encode_map_fn(text, label):
+  return tf.py_function(encode, inp=[text, label], Tout=(tf.int64, tf.int64))
+
 
 train_data = train.map(encode_map_fn)
 train_data = train_data.shuffle(BUFFER_SIZE)
