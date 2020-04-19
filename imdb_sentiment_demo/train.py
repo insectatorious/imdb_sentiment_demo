@@ -45,12 +45,12 @@ def encode_map_fn(text, label):
 
 
 BUFFER_SIZE: int = 15000
-MAX_WORDS: int = 1000
-BATCH_SIZE: int = 128
+MAX_WORDS: int = 500
+BATCH_SIZE: int = 96
 VOCAB_SIZE: int = 2 ** 15
 VOCAB_FILE: str = f"vocab_{VOCAB_SIZE}"
 EMBEDDING_DIM: int = 300
-LSTM_CELLS: int = 25
+LSTM_CELLS: int = 100
 
 sentences = train.map(get_text_from_labelled_sample)
 
