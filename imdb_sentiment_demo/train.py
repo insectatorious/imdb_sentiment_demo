@@ -95,6 +95,7 @@ for i in range(5):
       recurrent_regularizer=tf.keras.regularizers.l2(l=l2_scale)
     )
   )(layer)
+  layer = tf.keras.layers.SpatialDropout1D(dropout_prob)(layer)
   rnn_layer_list.append(layer)
 
 layer = tf.keras.layers.concatenate(rnn_layer_list, name="rnn_concat")
