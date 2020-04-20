@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+import io
+import json
 import os
 import logging
 import argparse
@@ -34,10 +35,36 @@ def main(FLAGS) -> None:
   pred_class: str = "Negative" if np.round(pred) == 0. else "Positive"
   logging.info(f"Classification is '{pred_class}' with a score of {pred}")
 
-  # if FLAGS.save_plots:
-  #   logging.info("Visualising classification, saving to 'visualisations' dir")
-  #   os.makedirs("visualisations", exist_ok=True)
-  #
+  if FLAGS.save_plots:
+    logging.info("Visualising classification, saving to 'visualisations' dir")
+    os.makedirs("visualisations", exist_ok=True)
+
+    out_model = tf.keras.models.Model(inputs=model.input,
+                                      outputs=(model.get_layer("attention").output[1],
+                                               model.layers[-1].output))
+
+    attention, posterior = out_model.predict(model_input.reshape(1, -1))
+
+    with io.open(os.path.join("visualisations",
+                              "neat_vision_single_string.json"),
+                 "w",
+                 encoding="utf-8") as m:
+      tokens = [encoder.decode([idx]) for idx in encoder.encode(sentence)]
+      nest_dict = dict(text=tokens,
+                     label=int(np.round(pred)),
+                     prediction=int(np.round(pred)),
+                     # posterior=posterior[0].tolist(),
+                     attention=attention[0].tolist(),
+                     id=FLAGS.sentence[:140])
+      json.dump([nest_dict], m)
+
+    with io.open(os.path.join("visualisations",
+                              "neat_vision_labels.json"),
+                 "w",
+                 encoding="utf-8") as m:
+      json.dump({"0": {"name": "Negative", "desc": "Negative"},
+                 "1": {"name": "Positive", "desc": "Positive"}},
+                m)
   #   vis_model = tf.keras.models.Model(
   #     inputs=model.input,
   #     outputs=[layer.output for layer in model.layers])

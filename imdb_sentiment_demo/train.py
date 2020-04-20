@@ -77,7 +77,7 @@ embedding_layer = tf.keras.layers.Embedding(encoder.vocab_size,
                                             mask_zero=True)(input_layer)
 layer = tf.keras.layers.SpatialDropout1D(dropout_prob)(embedding_layer)
 rnn_layer_list = [layer]
-for i in range(5):
+for i in range(2):
   layer = tf.keras.layers.Bidirectional(
     tf.keras.layers.LSTM(
       LSTM_CELLS,
@@ -90,10 +90,11 @@ for i in range(5):
   rnn_layer_list.append(layer)
 
 layer = tf.keras.layers.concatenate(rnn_layer_list, name="rnn_concat")
-layer = AttentionWeightedAverage(name="attention")(layer)
+layer = AttentionWeightedAverage(name="attention", return_attention=True)(layer)
+layer, weights = layer
 layer = tf.keras.layers.Dense(1, activation="sigmoid")(layer)
 
-model = tf.keras.models.Model(inputs=[input_layer], outputs=[layer])
+model = tf.keras.models.Model(inputs=[input_layer], outputs=layer)
 
 model.compile(tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
