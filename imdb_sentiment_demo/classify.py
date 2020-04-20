@@ -56,7 +56,7 @@ def main(FLAGS) -> None:
                      prediction=int(np.round(pred)),
                      # posterior=posterior[0].tolist(),
                      attention=attention[0].tolist(),
-                     id=FLAGS.sentence[:140])
+                     id=FLAGS.sentence[:16])
       json.dump([nest_dict], m)
 
     with io.open(os.path.join("visualisations",
