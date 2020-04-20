@@ -26,11 +26,11 @@ def get_text_from_labelled_sample(text, _): return text
 
 BUFFER_SIZE: int = 15000
 MAX_WORDS: int = 500
-BATCH_SIZE: int = 96
+BATCH_SIZE: int = 64
 VOCAB_SIZE: int = 2 ** 15
 VOCAB_FILE: str = f"vocab_{VOCAB_SIZE}"
 EMBEDDING_DIM: int = 300
-LSTM_CELLS: int = 100
+LSTM_CELLS: int = 300
 
 sentences = train.map(get_text_from_labelled_sample)
 
@@ -68,7 +68,7 @@ sample_text, sample_labels = next(iter(test_data))
 logging.info(sample_text[0], sample_labels[0])
 
 
-l2_scale = 1e-4
+l2_scale = 1e-3
 dropout_prob = 0.5
 
 input_layer = tf.keras.layers.Input(shape=(MAX_WORDS,))
