@@ -9,7 +9,7 @@ import tensorflow_datasets as tfds
 from tensorflow_datasets.core.features.text import SubwordTextEncoder
 
 from attention import AttentionWeightedAverage
-from utils import encode_text_with_encoder
+from utils import encode_text_with_encoder, preprocess_text, tf_preprocess_text
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
@@ -33,6 +33,7 @@ EMBEDDING_DIM: int = 300
 LSTM_CELLS: int = 300
 
 sentences = train.map(get_text_from_labelled_sample)
+sentences = sentences.map(tf_preprocess_text)
 
 if tf.io.gfile.exists(f"{VOCAB_FILE}.subwords"):
   logging.info(f"Existing vocab file found at {VOCAB_FILE}.subwords, loading")
@@ -47,7 +48,7 @@ else:
 
 def encode(text_tensor, label):
   return encode_text_with_encoder(encoder,
-                                  text_tensor.numpy(),
+                                  preprocess_text(text_tensor.numpy()),
                                   MAX_WORDS), label
 
 

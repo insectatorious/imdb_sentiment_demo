@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow_datasets.core.features.text import SubwordTextEncoder
 
 from attention import AttentionWeightedAverage
-from utils import encode_text_with_encoder
+from utils import encode_text_with_encoder, preprocess_text
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
@@ -26,8 +26,9 @@ def main(FLAGS) -> None:
   encoder_filename: str = FLAGS.saved_encoder.replace(".subwords", '')
   encoder: SubwordTextEncoder = SubwordTextEncoder.load_from_file(encoder_filename)
 
+  sentence: str = preprocess_text(FLAGS.sentence)
   model_input = encode_text_with_encoder(encoder=encoder,
-                                         text=FLAGS.sentence,
+                                         text=sentence,
                                          max_sequence_length=FLAGS.max_words)
   pred: np.ndarray = np.squeeze(model.predict(model_input.reshape(1, -1)))
   logging.debug(f"Predictions: {pred}")
