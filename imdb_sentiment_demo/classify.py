@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow_datasets.core.features.text import SubwordTextEncoder
 
 from attention import AttentionWeightedAverage
-from utils import encode_text_with_encoder, preprocess_text
+from utils import encode_text_with_encoder, preprocess_text, add_model_argparse
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
@@ -106,41 +106,14 @@ def main(FLAGS) -> None:
   #   rescaled_image.save(os.path.join(FLAGS.plot_dir, "rescaled_model_input.png"))
 
 
-def valid_path(path: str) -> str:
-  if os.path.exists(path):
-    if os.path.isdir(path):
-      raise argparse.ArgumentTypeError(f"Expected '{path}' to be a file, got a folder")
-  else:
-    raise argparse.ArgumentTypeError(f"Expected '{path}' to be a valid path")
-
-  return path
-
-
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
+  parser = add_model_argparse(parser)
   parser.add_argument(
     "sentence",
     default="",
     type=str,
     help="String sentence to classify"
-  )
-  parser.add_argument(
-    "--saved_model",
-    default="model.h5",
-    type=valid_path,
-    help="Path to a saved TF Keras model")
-  parser.add_argument(
-    "--saved_encoder",
-    default="vocab_1024",
-    type=valid_path,
-    help="Path to saved encoder (tfds.features.text.TextEncoder subclass)"
-  )
-  parser.add_argument(
-    "--max_words",
-    default=100,
-    type=int,
-    help="Max number of words in a single input to the network - must match "
-         "the value used during training"
   )
   parser.add_argument(
     "--save_plots",
