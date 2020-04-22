@@ -5,23 +5,12 @@ import logging
 from datetime import datetime
 
 import tensorflow as tf
-import tensorflow_datasets as tfds
-from tensorflow_datasets.core.features.text import SubwordTextEncoder
 
 from attention import AttentionWeightedAverage
-from utils import encode_text_with_encoder, preprocess_text, tf_preprocess_text
+from utils import load_imdb_data
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
-
-
-(train, test), info = tfds.load("imdb_reviews",
-                                as_supervised=True,
-                                with_info=True,
-                                split=["train", "test"])
-
-
-def get_text_from_labelled_sample(text, _): return text
 
 
 BUFFER_SIZE: int = 15000
@@ -32,37 +21,10 @@ VOCAB_FILE: str = f"vocab_{VOCAB_SIZE}"
 EMBEDDING_DIM: int = 300
 LSTM_CELLS: int = 300
 
-sentences = train.map(get_text_from_labelled_sample)
-sentences = sentences.map(tf_preprocess_text)
-
-if tf.io.gfile.exists(f"{VOCAB_FILE}.subwords"):
-  logging.info(f"Existing vocab file found at {VOCAB_FILE}.subwords, loading")
-  encoder = SubwordTextEncoder.load_from_file(VOCAB_FILE)
-else:
-  logging.info(f"No vocab file found at {VOCAB_FILE}.subwords, building")
-  encoder = SubwordTextEncoder.build_from_corpus(sentences.as_numpy_iterator(),
-                                                 VOCAB_SIZE)
-  encoder.save_to_file(VOCAB_FILE)
-  logging.info(f"Vocab file saved at {VOCAB_FILE}.subwords")
-
-
-def encode(text_tensor, label):
-  return encode_text_with_encoder(encoder,
-                                  preprocess_text(text_tensor.numpy()),
-                                  MAX_WORDS), label
-
-
-def encode_map_fn(text, label):
-  return tf.py_function(encode, inp=[text, label], Tout=(tf.int64, tf.int64))
-
-
-train_data = train.map(encode_map_fn)
-train_data = train_data.shuffle(BUFFER_SIZE)
-train_data = train_data.padded_batch(BATCH_SIZE, padded_shapes=([-1], []))
-
-test_data = test.map(encode_map_fn)
-test_data = test_data.padded_batch(BATCH_SIZE, padded_shapes=([-1], []))
-
+train_data, test_data, encoder = load_imdb_data(batch_size=BATCH_SIZE,
+                                                max_words=MAX_WORDS,
+                                                vocab_size=VOCAB_SIZE,
+                                                buffer_size=BUFFER_SIZE)
 
 sample_text, sample_labels = next(iter(test_data))
 
