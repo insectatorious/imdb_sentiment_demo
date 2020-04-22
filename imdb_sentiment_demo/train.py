@@ -4,73 +4,27 @@ import os
 import logging
 from datetime import datetime
 
-import numpy as np
 import tensorflow as tf
-import tensorflow_datasets as tfds
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow_datasets.core.features.text import SubwordTextEncoder
 
 from attention import AttentionWeightedAverage
+from utils import load_imdb_data
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
 
 
-(train, test), info = tfds.load("imdb_reviews",
-                                as_supervised=True,
-                                with_info=True,
-                                split=["train", "test"])
-
-
-def get_text_from_labelled_sample(text, _): return text
-
-
-def encode_text(text):
-  encoded_text = encoder.encode(text)
-  encoded_text = pad_sequences([encoded_text],
-                               maxlen=1000,
-                               padding="post",
-                               truncating="post")
-  encoded_text = np.squeeze(encoded_text)
-
-  return encoded_text
-
-
-def encode(text_tensor, label):
-  return encode_text(text_tensor.numpy()), label
-
-
-def encode_map_fn(text, label):
-  return tf.py_function(encode, inp=[text, label], Tout=(tf.int64, tf.int64))
-
-
 BUFFER_SIZE: int = 15000
-MAX_WORDS: int = 1000
-BATCH_SIZE: int = 128
+MAX_WORDS: int = 500
+BATCH_SIZE: int = 64
 VOCAB_SIZE: int = 2 ** 15
 VOCAB_FILE: str = f"vocab_{VOCAB_SIZE}"
 EMBEDDING_DIM: int = 300
-LSTM_CELLS: int = 25
+LSTM_CELLS: int = 250
 
-sentences = train.map(get_text_from_labelled_sample)
-
-if tf.io.gfile.exists(f"{VOCAB_FILE}.subwords"):
-  logging.info(f"Existing vocab file found at {VOCAB_FILE}.subwords, loading")
-  encoder = SubwordTextEncoder.load_from_file(VOCAB_FILE)
-else:
-  logging.info(f"No vocab file found at {VOCAB_FILE}.subwords, building")
-  encoder = SubwordTextEncoder.build_from_corpus(sentences.as_numpy_iterator(),
-                                                 VOCAB_SIZE)
-  encoder.save_to_file(VOCAB_FILE)
-  logging.info(f"Vocab file saved at {VOCAB_FILE}.subwords")
-
-train_data = train.map(encode_map_fn)
-train_data = train_data.shuffle(BUFFER_SIZE)
-train_data = train_data.padded_batch(BATCH_SIZE, padded_shapes=([-1], []))
-
-test_data = test.map(encode_map_fn)
-test_data = test_data.padded_batch(BATCH_SIZE, padded_shapes=([-1], []))
-
+train_data, test_data, encoder = load_imdb_data(batch_size=BATCH_SIZE,
+                                                max_words=MAX_WORDS,
+                                                vocab_size=VOCAB_SIZE,
+                                                buffer_size=BUFFER_SIZE)
 
 sample_text, sample_labels = next(iter(test_data))
 
@@ -86,7 +40,7 @@ embedding_layer = tf.keras.layers.Embedding(encoder.vocab_size,
                                             mask_zero=True)(input_layer)
 layer = tf.keras.layers.SpatialDropout1D(dropout_prob)(embedding_layer)
 rnn_layer_list = [layer]
-for i in range(5):
+for i in range(2):
   layer = tf.keras.layers.Bidirectional(
     tf.keras.layers.LSTM(
       LSTM_CELLS,
@@ -95,13 +49,16 @@ for i in range(5):
       recurrent_regularizer=tf.keras.regularizers.l2(l=l2_scale)
     )
   )(layer)
+  layer = tf.keras.layers.SpatialDropout1D(dropout_prob)(layer)
   rnn_layer_list.append(layer)
 
 layer = tf.keras.layers.concatenate(rnn_layer_list, name="rnn_concat")
-layer = AttentionWeightedAverage(name="attention")(layer)
+layer = AttentionWeightedAverage(name="attention", return_attention=True)(layer)
+layer, weights = layer
+layer = tf.keras.layers.Dropout(dropout_prob)(layer)
 layer = tf.keras.layers.Dense(1, activation="sigmoid")(layer)
 
-model = tf.keras.models.Model(inputs=[input_layer], outputs=[layer])
+model = tf.keras.models.Model(inputs=[input_layer], outputs=layer)
 
 model.compile(tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),

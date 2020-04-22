@@ -1,0 +1,7 @@
+scikit-learn
+pydot
+pytest
+plotly
+tensorflow-cpu~=2.1.0
+coverage
+coveralls
