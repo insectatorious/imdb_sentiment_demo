@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow_datasets.core.features.text import SubwordTextEncoder
 
 from attention import AttentionWeightedAverage
-from utils import encode_text_with_encoder, preprocess_text, add_model_argparse
+from utils import encode_text_with_encoder, preprocess_text, add_model_argparse, numeric_label_to_text
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
@@ -33,7 +33,8 @@ def main(FLAGS) -> None:
   pred: np.ndarray = np.squeeze(model.predict(model_input.reshape(1, -1)))
   logging.debug(f"Predictions: {pred}")
 
-  pred_class: str = "Negative" if np.round(pred) == 0. else "Positive"
+  pred_class: str = numeric_label_to_text(np.round(pred))
+  logging.info(f"Input sentence: {FLAGS.sentence}")
   logging.info(f"Classification is '{pred_class}' with a score of {pred}")
 
   if FLAGS.save_plots:
