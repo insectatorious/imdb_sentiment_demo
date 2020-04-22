@@ -55,6 +55,7 @@ for i in range(2):
 layer = tf.keras.layers.concatenate(rnn_layer_list, name="rnn_concat")
 layer = AttentionWeightedAverage(name="attention", return_attention=True)(layer)
 layer, weights = layer
+layer = tf.keras.layers.Dropout(dropout_prob)(layer)
 layer = tf.keras.layers.Dense(1, activation="sigmoid")(layer)
 
 model = tf.keras.models.Model(inputs=[input_layer], outputs=layer)
