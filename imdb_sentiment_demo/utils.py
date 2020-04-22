@@ -16,6 +16,14 @@ from tensorflow_datasets.core.features.text.text_encoder import TextEncoder
 from attention import AttentionWeightedAverage
 
 
+def numeric_label_to_text(label_numeric):
+  if isinstance(label_numeric, np.ndarray):
+    if len(label_numeric) == 0:
+      return []
+    return [numeric_label_to_text(label_numeric[0])] + [numeric_label_to_text(label_numeric[1:])]
+  return "Negative" if label_numeric == 0. else "Positive"
+
+
 def preprocess_text(text: str) -> str:
   if isinstance(text, bytes):
     text = text.decode("utf-8")
