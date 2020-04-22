@@ -19,7 +19,7 @@ BATCH_SIZE: int = 64
 VOCAB_SIZE: int = 2 ** 15
 VOCAB_FILE: str = f"vocab_{VOCAB_SIZE}"
 EMBEDDING_DIM: int = 300
-LSTM_CELLS: int = 300
+LSTM_CELLS: int = 250
 
 train_data, test_data, encoder = load_imdb_data(batch_size=BATCH_SIZE,
                                                 max_words=MAX_WORDS,
@@ -31,7 +31,7 @@ sample_text, sample_labels = next(iter(test_data))
 logging.info(sample_text[0], sample_labels[0])
 
 
-l2_scale = 1e-3
+l2_scale = 1e-4
 dropout_prob = 0.5
 
 input_layer = tf.keras.layers.Input(shape=(MAX_WORDS,))
